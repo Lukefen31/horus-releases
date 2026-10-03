@@ -54,10 +54,14 @@ const wanted = [
   ["Horus-club.aab", pick((f) => /club.*app-release\.aab$/.test(f) || /horus-club-android.*\.aab$/.test(f))],
   ["Horus-member.apk", pick((f) => /member.*app-release\.apk$/.test(f) || /horus-member-android.*\.apk$/.test(f))],
   ["Horus-member.aab", pick((f) => /member.*app-release\.aab$/.test(f) || /horus-member-android.*\.aab$/.test(f))],
+  ["Horus-home.apk", pick((f) => /home.*app-release\.apk$/.test(f) || /horus-home-android.*\.apk$/.test(f))],
+  ["Horus-home.aab", pick((f) => /home.*app-release\.aab$/.test(f) || /horus-home-android.*\.aab$/.test(f))],
   ["Horus-club-ios-simulator.app.zip", pick((f) => /Horus-club-simulator\.app\.zip$/.test(f))],
   ["Horus-member-ios-simulator.app.zip", pick((f) => /Horus-member-simulator\.app\.zip$/.test(f))],
   ["Horus-club.xcarchive.zip", pick((f) => /Horus-club\.xcarchive\.zip$/.test(f))],
   ["Horus-member.xcarchive.zip", pick((f) => /Horus-member\.xcarchive\.zip$/.test(f))],
+  ["Horus-home-ios-simulator.app.zip", pick((f) => /Horus-home-simulator\.app\.zip$/.test(f))],
+  ["Horus-home.xcarchive.zip", pick((f) => /Horus-home\.xcarchive\.zip$/.test(f))],
 ];
 
 const stage = path.join(tmpdir(), `horus-release-${version}`);

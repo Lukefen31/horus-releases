@@ -2,7 +2,7 @@
   "name": "horus-desktop",
   "productName": "Horus",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Horus for Windows, macOS and Linux: the club app in its own window.",
   "author": "Horus <hello@horus.farm>",
   "homepage": "https://horus.farm",

@@ -45,7 +45,7 @@ const symbolSvg = (fill, size, scale, bg) => {
 
 const render = (svg, size, out) => sharp(Buffer.from(svg), { density: 300 }).resize(size, size).png({ compressionLevel: 9 }).toFile(out);
 
-for (const app of ["club", "member"]) {
+for (const app of ["club", "member", "home"]) {
   const res = path.join(ROOT, app, "resources");
   mkdirSync(res, { recursive: true });
   // The website tile keeps the symbol at 44/64 of the box; adaptive icons need it inside the safe centre (66%).

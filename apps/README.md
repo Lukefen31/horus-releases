@@ -7,8 +7,8 @@ app; the web app itself is already installable from the browser (see
 
 | Device | What ships | Where it comes from |
 |---|---|---|
-| iPhone, iPad | "Horus" (staff, opens at /club) and "Horus Member" (members, opens at /portal) | `apps/native/{club,member}/ios`, built by `.github/workflows/ios.yml` on a macOS runner |
-| Android phones, tablets | the same two apps as APK (direct install, device management) and AAB (Play) | `apps/native/{club,member}/android`, built locally or by `.github/workflows/android.yml` |
+| iPhone, iPad | "Horus" (staff, opens at /club), "Horus Member" (members, opens at /portal) and "Horus Home" (personal growers, opens at /home) | `apps/native/{club,member,home}/ios`, built by `.github/workflows/ios.yml` on a macOS runner |
+| Android phones, tablets | the same three apps as APK (direct install, device management) and AAB (Play) | `apps/native/{club,member,home}/android`, built locally or by `.github/workflows/android.yml` |
 | Windows, macOS, Linux | "Horus" desktop app (installer and portable on Windows, dmg on macOS, AppImage and deb on Linux) | `apps/desktop`, built by `.github/workflows/desktop.yml` |
 | Any browser | the web app, installable from the browser (Chrome, Edge, Safari's Add to Home Screen) | `web/` |
 

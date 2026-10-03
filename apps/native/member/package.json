@@ -1,7 +1,7 @@
 {
   "name": "horus-member-app",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Horus Member: the member portal for iPhone, iPad and Android (Capacitor shell; dependencies live in ../package.json).",
   "scripts": {
     "sync": "cap sync",

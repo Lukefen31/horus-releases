@@ -1,16 +1,18 @@
 {
   "name": "horus-native",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Horus for iPhone, iPad and Android: Capacitor shells around the live product (the club app and the member portal).",
   "type": "module",
   "scripts": {
-    "assets": "node scripts/brand-assets.mjs && npm run assets:club && npm run assets:member",
+    "assets": "node scripts/brand-assets.mjs && npm run assets:club && npm run assets:member && npm run assets:home",
     "assets:club": "cd club && npx @capacitor/assets generate --iconBackgroundColor \"#4E2A74\" --iconBackgroundColorDark \"#4E2A74\" --splashBackgroundColor \"#F1F6F3\" --splashBackgroundColorDark \"#09110F\"",
     "assets:member": "cd member && npx @capacitor/assets generate --iconBackgroundColor \"#4E2A74\" --iconBackgroundColorDark \"#4E2A74\" --splashBackgroundColor \"#F1F6F3\" --splashBackgroundColorDark \"#09110F\"",
-    "sync": "cd club && npx cap sync && cd ../member && npx cap sync",
+    "assets:home": "cd home && npx @capacitor/assets generate --iconBackgroundColor \"#4E2A74\" --iconBackgroundColorDark \"#4E2A74\" --splashBackgroundColor \"#F1F6F3\" --splashBackgroundColorDark \"#09110F\"",
+    "sync": "cd club && npx cap sync && cd ../member && npx cap sync && cd ../home && npx cap sync",
     "android:club": "cd club/android && gradlew.bat bundleRelease assembleRelease",
-    "android:member": "cd member/android && gradlew.bat bundleRelease assembleRelease"
+    "android:member": "cd member/android && gradlew.bat bundleRelease assembleRelease",
+    "android:home": "cd home/android && gradlew.bat bundleRelease assembleRelease"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.2",

@@ -3,8 +3,10 @@ node_modules/
 # Generated per app from shared/www and scripts/brand-assets.mjs
 club/www/
 member/www/
+home/www/
 club/resources/
 member/resources/
+home/resources/
 # Native build outputs
 */android/app/build/
 */android/.gradle/

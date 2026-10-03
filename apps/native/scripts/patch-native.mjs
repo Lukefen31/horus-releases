@@ -23,6 +23,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const APPS = {
   club: { startPath: "/club", displayName: "Horus" },
   member: { startPath: "/portal", displayName: "Horus Member" },
+  home: { startPath: "/home", displayName: "Horus Home" },
 };
 const version = JSON.parse(readFileSync(path.join(ROOT, "package.json"), "utf8")).version;
 

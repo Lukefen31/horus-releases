@@ -32,7 +32,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        app: [club, member]
+        app: [club, member, home]
     defaults:
       run:
         working-directory: apps/native
@@ -83,7 +83,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        app: [club, member]
+        app: [club, member, home]
     defaults:
       run:
         working-directory: apps/native

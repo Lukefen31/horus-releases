@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 
 /**
- * The two phone and tablet apps are thin native shells around the live
+ * The three phone and tablet apps (club, member, Horus Home) are thin native shells around the live
  * product: the shell loads horus.farm over HTTPS (so the app is always the
  * deployed version, with the service worker and the install-free updates
  * that the web app already has) and adds what only a native app can give:
@@ -16,7 +16,7 @@ import type { CapacitorConfig } from "@capacitor/cli";
  */
 export const SITE = "https://horus.farm";
 
-export function baseConfig(app: { appId: string; appName: string; startPath: "/club" | "/portal" }): CapacitorConfig {
+export function baseConfig(app: { appId: string; appName: string; startPath: "/club" | "/portal" | "/home" }): CapacitorConfig {
   return {
     appId: app.appId,
     appName: app.appName,

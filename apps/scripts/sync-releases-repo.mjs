@@ -37,10 +37,12 @@ try {
 // Start clean, keep .git
 for (const name of ["apps", "web", ".github", "README.md", ".gitignore"]) rmSync(path.join(CHECKOUT, name), { recursive: true, force: true });
 
-const SKIP = new Set(["node_modules", "dist", "build", ".gradle", "www", "resources", "Pods", "xcuserdata", "release", ".assets-stamp", "public-repo"]);
+const SKIP = new Set(["node_modules", "dist", "build", ".gradle", "resources", "Pods", "xcuserdata", "release", ".assets-stamp", "public-repo"]);
 const filter = (src) => {
   const base = path.basename(src);
   if (SKIP.has(base)) return false;
+  // The per-app www/ folders are generated from shared/www, which must come across.
+  if (/[\\/](club|member)[\\/]www([\\/]|$)/.test(src)) return false;
   // Android build outputs under app/build and the generated local.properties
   if (/[\\/]android[\\/]app[\\/]build([\\/]|$)/.test(src)) return false;
   if (base === "local.properties") return false;

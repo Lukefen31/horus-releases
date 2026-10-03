@@ -1,0 +1,9 @@
+node_modules/
+apps/native/club/www/
+apps/native/member/www/
+apps/native/*/resources/
+apps/native/*/android/app/build/
+apps/native/*/android/.gradle/
+apps/native/*/android/local.properties
+apps/desktop/dist/
+apps/desktop/build/icon.*

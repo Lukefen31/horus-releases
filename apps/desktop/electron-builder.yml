@@ -1,0 +1,57 @@
+# Horus for the desktop: installers for Windows, macOS and Linux.
+#   npm run dist:win     (on Windows)     → dist/Horus-Setup-<version>.exe and a portable .exe
+#   npm run dist:mac     (on macOS)       → dist/Horus-<version>.dmg (unsigned until the Apple certificate exists)
+#   npm run dist:linux   (on Linux)       → dist/Horus-<version>.AppImage and .deb
+# CI builds all three (.github/workflows/desktop.yml) and the public releases repo carries the files.
+appId: farm.horus.desktop
+productName: Horus
+copyright: Horus
+directories:
+  output: dist
+  buildResources: build
+files:
+  - main.js
+  - preload.js
+  - offline.html
+  - build/icon.png
+  - package.json
+asar: true
+artifactName: Horus-${version}-${os}-${arch}.${ext}
+win:
+  target:
+    - nsis
+    - portable
+  icon: build/icon.ico
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  artifactName: Horus-Setup-${version}.${ext}
+  shortcutName: Horus
+  uninstallDisplayName: Horus
+portable:
+  artifactName: Horus-${version}-portable.${ext}
+mac:
+  category: public.app-category.productivity
+  icon: build/icon.icns
+  target:
+    - target: dmg
+      arch: [universal]
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  darkModeSupport: true
+  # Signing and notarisation switch on when CSC_LINK / APPLE_ID secrets exist; without them the build is unsigned.
+dmg:
+  artifactName: Horus-${version}.${ext}
+linux:
+  category: Office
+  icon: build/icon.png
+  target:
+    - AppImage
+    - deb
+  maintainer: Horus <hello@horus.farm>
+  desktop:
+    entry:
+      Name: Horus
+      Comment: Cultivation, counter and compliance for licensed associations
+publish: null

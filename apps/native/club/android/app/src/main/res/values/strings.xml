@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Horus</string>
+    <string name="title_activity_main">Horus</string>
+    <string name="package_name">farm.horus.club</string>
+    <string name="custom_url_scheme">farm.horus.club</string>
+</resources>

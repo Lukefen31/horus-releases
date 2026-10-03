@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Horus Member</string>
+    <string name="title_activity_main">Horus Member</string>
+    <string name="package_name">farm.horus.member</string>
+    <string name="custom_url_scheme">farm.horus.member</string>
+</resources>

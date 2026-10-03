@@ -1,0 +1,17 @@
+node_modules/
+.assets-stamp
+# Generated per app from shared/www and scripts/brand-assets.mjs
+club/www/
+member/www/
+club/resources/
+member/resources/
+# Native build outputs
+*/android/app/build/
+*/android/.gradle/
+*/android/build/
+*/android/local.properties
+*/android/app/release/
+*/ios/App/Pods/
+*/ios/App/build/
+*/ios/App/App.xcworkspace/xcuserdata/
+*/ios/App/App.xcodeproj/xcuserdata/

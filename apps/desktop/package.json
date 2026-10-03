@@ -1,0 +1,24 @@
+{
+  "name": "horus-desktop",
+  "productName": "Horus",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Horus for Windows, macOS and Linux: the club app in its own window.",
+  "author": "Horus <hello@horus.farm>",
+  "homepage": "https://horus.farm",
+  "license": "UNLICENSED",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "icons": "node scripts/icons.mjs",
+    "dist": "electron-builder --publish never",
+    "dist:win": "electron-builder --win --publish never",
+    "dist:mac": "electron-builder --mac --publish never",
+    "dist:linux": "electron-builder --linux --publish never"
+  },
+  "devDependencies": {
+    "electron": "^44.5.1",
+    "electron-builder": "^26.15.3",
+    "sharp": "^0.34.0"
+  }
+}

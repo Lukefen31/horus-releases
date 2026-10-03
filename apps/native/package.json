@@ -1,0 +1,31 @@
+{
+  "name": "horus-native",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Horus for iPhone, iPad and Android: Capacitor shells around the live product (the club app and the member portal).",
+  "type": "module",
+  "scripts": {
+    "assets": "node scripts/brand-assets.mjs && npm run assets:club && npm run assets:member",
+    "assets:club": "cd club && npx @capacitor/assets generate --iconBackgroundColor \"#4E2A74\" --iconBackgroundColorDark \"#4E2A74\" --splashBackgroundColor \"#F1F6F3\" --splashBackgroundColorDark \"#09110F\"",
+    "assets:member": "cd member && npx @capacitor/assets generate --iconBackgroundColor \"#4E2A74\" --iconBackgroundColorDark \"#4E2A74\" --splashBackgroundColor \"#F1F6F3\" --splashBackgroundColorDark \"#09110F\"",
+    "sync": "cd club && npx cap sync && cd ../member && npx cap sync",
+    "android:club": "cd club/android && gradlew.bat bundleRelease assembleRelease",
+    "android:member": "cd member/android && gradlew.bat bundleRelease assembleRelease"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/app": "^8.0.0",
+    "@capacitor/browser": "^8.0.0",
+    "@capacitor/core": "^8.5.2",
+    "@capacitor/ios": "^8.5.2",
+    "@capacitor/network": "^8.0.0",
+    "@capacitor/splash-screen": "^8.0.0",
+    "@capacitor/status-bar": "^8.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^8.5.2",
+    "sharp": "^0.34.0",
+    "typescript": "^5.9.0"
+  }
+}

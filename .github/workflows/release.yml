@@ -1,0 +1,213 @@
+# Builds every Horus app and publishes a release with stable file names.
+# This repo (Lukefen31/horus-releases) holds only the native shells, synced
+# from the private product repo by apps/scripts/sync-releases-repo.mjs, so
+# the release can be created with the repo's own token and the downloads
+# are public. Run it from the Actions tab (version, e.g. 1.0.0) or push a
+# tag v<version>.
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to publish (e.g. 1.0.0)"
+        required: true
+        default: "1.0.0"
+      notes:
+        description: "Release notes (one line is fine)"
+        required: false
+        default: ""
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+env:
+  VERSION: ${{ github.event.inputs.version || github.ref_name }}
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [club, member]
+    defaults:
+      run:
+        working-directory: apps/native
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - run: npm ci --no-audit --no-fund
+      - name: Brand assets and native project
+        run: |
+          node scripts/brand-assets.mjs
+          cd ${{ matrix.app }}
+          npx @capacitor/assets generate --iconBackgroundColor "#4E2A74" --iconBackgroundColorDark "#4E2A74" --splashBackgroundColor "#F1F6F3" --splashBackgroundColorDark "#09110F"
+          npx cap sync android
+          node ../scripts/patch-native.mjs
+      - name: Upload key (when configured)
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        if: env.KEYSTORE_B64 != ''
+        run: |
+          echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/upload.jks"
+          echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/upload.jks" >> "$GITHUB_ENV"
+      - name: Build
+        working-directory: apps/native/${{ matrix.app }}/android
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_VERSION_CODE: ${{ github.run_number }}
+        run: |
+          chmod +x gradlew
+          if [ -n "$ANDROID_KEYSTORE_PATH" ]; then ./gradlew --no-daemon bundleRelease assembleRelease; else ./gradlew --no-daemon assembleDebug; fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: horus-${{ matrix.app }}-android
+          path: |
+            apps/native/${{ matrix.app }}/android/app/build/outputs/apk/**/*.apk
+            apps/native/${{ matrix.app }}/android/app/build/outputs/bundle/**/*.aab
+          if-no-files-found: error
+
+  ios:
+    runs-on: macos-15
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [club, member]
+    defaults:
+      run:
+        working-directory: apps/native
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --no-audit --no-fund
+      - name: Brand assets and native project
+        run: |
+          node scripts/brand-assets.mjs
+          cd ${{ matrix.app }}
+          npx @capacitor/assets generate --iconBackgroundColor "#4E2A74" --iconBackgroundColorDark "#4E2A74" --splashBackgroundColor "#F1F6F3" --splashBackgroundColorDark "#09110F"
+          npx cap sync ios
+          node ../scripts/patch-native.mjs
+      - name: Simulator build
+        working-directory: apps/native/${{ matrix.app }}/ios/App
+        run: |
+          xcodebuild -project App.xcodeproj -scheme App -configuration Release -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath "$RUNNER_TEMP/sim" build CODE_SIGNING_ALLOWED=NO | tail -3
+          ditto -c -k --keepParent "$RUNNER_TEMP/sim/Build/Products/Release-iphonesimulator/App.app" "$RUNNER_TEMP/Horus-${{ matrix.app }}-simulator.app.zip"
+      - name: Device archive
+        working-directory: apps/native/${{ matrix.app }}/ios/App
+        env:
+          CERT_B64: ${{ secrets.IOS_CERT_P12_BASE64 }}
+          CERT_PASSWORD: ${{ secrets.IOS_CERT_PASSWORD }}
+          PROFILE_B64: ${{ secrets.IOS_PROVISION_PROFILE_BASE64 }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          if [ -n "$CERT_B64" ] && [ -n "$PROFILE_B64" ]; then
+            KEYCHAIN="$RUNNER_TEMP/build.keychain-db"
+            security create-keychain -p "" "$KEYCHAIN"
+            security set-keychain-settings -lut 21600 "$KEYCHAIN"
+            security unlock-keychain -p "" "$KEYCHAIN"
+            echo "$CERT_B64" | base64 -d > "$RUNNER_TEMP/cert.p12"
+            security import "$RUNNER_TEMP/cert.p12" -P "$CERT_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN"
+            security list-keychain -d user -s "$KEYCHAIN"
+            mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+            echo "$PROFILE_B64" | base64 -d > ~/Library/MobileDevice/Provisioning\ Profiles/horus.mobileprovision
+            xcodebuild -project App.xcodeproj -scheme App -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/App.xcarchive" archive DEVELOPMENT_TEAM="$APPLE_TEAM_ID" | tail -3
+            printf '%s\n' '<?xml version="1.0" encoding="UTF-8"?>' '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' '<plist version="1.0"><dict><key>method</key><string>app-store-connect</string><key>uploadSymbols</key><true/></dict></plist>' > "$RUNNER_TEMP/export.plist"
+            xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/App.xcarchive" -exportOptionsPlist "$RUNNER_TEMP/export.plist" -exportPath "$RUNNER_TEMP/export" | tail -3
+          else
+            echo "No Apple signing secrets: producing an unsigned archive."
+            xcodebuild -project App.xcodeproj -scheme App -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/App.xcarchive" archive CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO | tail -3
+          fi
+          ditto -c -k --keepParent "$RUNNER_TEMP/App.xcarchive" "$RUNNER_TEMP/Horus-${{ matrix.app }}.xcarchive.zip"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: horus-${{ matrix.app }}-ios
+          path: |
+            ${{ runner.temp }}/Horus-${{ matrix.app }}-simulator.app.zip
+            ${{ runner.temp }}/Horus-${{ matrix.app }}.xcarchive.zip
+            ${{ runner.temp }}/export/*.ipa
+          if-no-files-found: error
+
+  desktop:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            target: --win
+          - os: macos-15
+            target: --mac
+          - os: ubuntu-latest
+            target: --linux
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: apps/desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --no-audit --no-fund
+      - run: npm run icons
+      - name: Build
+        shell: bash
+        env:
+          MAC_CERT_P12_BASE64: ${{ secrets.MAC_CERT_P12_BASE64 }}
+          MAC_CERT_PASSWORD: ${{ secrets.MAC_CERT_PASSWORD }}
+          MAC_APPLE_ID: ${{ secrets.APPLE_ID }}
+          MAC_APP_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          MAC_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          WIN_CERT: ${{ secrets.WIN_CSC_LINK }}
+          WIN_CERT_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+        run: |
+          if [ "${{ matrix.target }}" = "--mac" ] && [ -n "$MAC_CERT_P12_BASE64" ]; then
+            export CSC_LINK="$MAC_CERT_P12_BASE64" CSC_KEY_PASSWORD="$MAC_CERT_PASSWORD" APPLE_ID="$MAC_APPLE_ID" APPLE_APP_SPECIFIC_PASSWORD="$MAC_APP_PASSWORD" APPLE_TEAM_ID="$MAC_TEAM_ID"
+          elif [ "${{ matrix.target }}" = "--win" ] && [ -n "$WIN_CERT" ]; then
+            export CSC_LINK="$WIN_CERT" CSC_KEY_PASSWORD="$WIN_CERT_PASSWORD"
+          else
+            export CSC_IDENTITY_AUTO_DISCOVERY=false
+          fi
+          npx electron-builder ${{ matrix.target }} --publish never
+      - uses: actions/upload-artifact@v4
+        with:
+          name: horus-desktop-${{ runner.os }}
+          path: |
+            apps/desktop/dist/*.exe
+            apps/desktop/dist/*.dmg
+            apps/desktop/dist/*.AppImage
+            apps/desktop/dist/*.deb
+          if-no-files-found: error
+
+  publish:
+    needs: [android, ios, desktop]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@v4
+        with:
+          path: out
+      - name: Publish the release with stable file names
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NOTES: ${{ github.event.inputs.notes }}
+        run: |
+          V="${VERSION#v}"
+          ls -R out | head -40
+          if [ -n "$NOTES" ]; then node apps/scripts/publish-release.mjs "$V" out --notes "$NOTES"; else node apps/scripts/publish-release.mjs "$V" out; fi

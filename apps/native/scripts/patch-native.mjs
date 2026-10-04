@@ -9,9 +9,14 @@
  *   - versionCode from ANDROID_VERSION_CODE (CI run number), versionName from package.json
  *   - App Links: https://horus.farm/club/* (club) or /portal/* (member) open the app
  *     (verified against public/.well-known/assetlinks.json on the site)
- * iOS (App/Info.plist)
+ * iOS (App/Info.plist, App/App.entitlements, App.xcodeproj)
  *   - WKAppBoundDomains = horus.farm, so the site's service worker runs in the shell
  *   - ITSAppUsesNonExemptEncryption = false (HTTPS only), the display name
+ *   - Associated Domains (applinks + webcredentials for horus.farm) in the
+ *     entitlements file, wired into the App target's build settings
+ *   - the Apple team (23Y8G4D63V, Luke's developer account: public, it is in
+ *     every signed app) and MARKETING_VERSION from package.json; the build
+ *     number comes from CI (CURRENT_PROJECT_VERSION on the xcodebuild line)
  *
  *   node scripts/patch-native.mjs
  */
@@ -26,6 +31,42 @@ const APPS = {
   home: { startPath: "/home", displayName: "Horus Home" },
 };
 const version = JSON.parse(readFileSync(path.join(ROOT, "package.json"), "utf8")).version;
+export const APPLE_TEAM_ID = "23Y8G4D63V";
+
+const ENTITLEMENTS = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:horus.farm</string>
+		<string>webcredentials:horus.farm</string>
+	</array>
+</dict>
+</plist>
+`;
+
+function patchXcodeProject(app) {
+  const dir = path.join(ROOT, app, "ios/App");
+  const pbx = path.join(dir, "App.xcodeproj/project.pbxproj");
+  if (!existsSync(pbx)) {
+    console.log(`${app}: no ios project yet`);
+    return;
+  }
+  writeFileSync(path.join(dir, "App/App.entitlements"), ENTITLEMENTS);
+  let s = readFileSync(pbx, "utf8");
+  // Only the App target's build configurations carry the bundle id.
+  s = s.replace(/buildSettings = \{([^}]*?PRODUCT_BUNDLE_IDENTIFIER = farm\.horus\.[a-z]+;[^}]*?)\};/gs, (block, body) => {
+    let b = body;
+    if (!b.includes("CODE_SIGN_ENTITLEMENTS")) b = b.replace(/(\t+)CODE_SIGN_STYLE = Automatic;/, `$1CODE_SIGN_ENTITLEMENTS = App/App.entitlements;\n$1CODE_SIGN_STYLE = Automatic;`);
+    if (!b.includes("DEVELOPMENT_TEAM")) b = b.replace(/(\t+)CODE_SIGN_STYLE = Automatic;/, `$1CODE_SIGN_STYLE = Automatic;\n$1DEVELOPMENT_TEAM = ${APPLE_TEAM_ID};`);
+    b = b.replace(/MARKETING_VERSION = [^;]+;/, `MARKETING_VERSION = ${version};`);
+    return `buildSettings = {${b}};`;
+  });
+  writeFileSync(pbx, s);
+  const n = (s.match(/CODE_SIGN_ENTITLEMENTS = App\/App\.entitlements;/g) || []).length;
+  console.log(`${app}: xcode project patched (entitlements in ${n} configurations, team ${APPLE_TEAM_ID}, version ${version})`);
+}
 
 function patchGradle(app) {
   const file = path.join(ROOT, app, "android/app/build.gradle");
@@ -112,4 +153,5 @@ for (const [app, cfg] of Object.entries(APPS)) {
   patchGradle(app);
   patchManifest(app, cfg.startPath);
   patchInfoPlist(app, cfg.displayName);
+  patchXcodeProject(app);
 }

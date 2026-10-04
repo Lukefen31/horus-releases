@@ -17,6 +17,10 @@ on:
         description: "Release notes (one line is fine)"
         required: false
         default: ""
+      testflight:
+        description: "Upload the iPhone/iPad builds to App Store Connect (TestFlight) when the API key is configured"
+        required: false
+        default: "true"
   push:
     tags: ["v*"]
 
@@ -100,44 +104,20 @@ jobs:
           npx @capacitor/assets generate --iconBackgroundColor "#4E2A74" --iconBackgroundColorDark "#4E2A74" --splashBackgroundColor "#F1F6F3" --splashBackgroundColorDark "#09110F"
           npx cap sync ios
           node ../scripts/patch-native.mjs
-      - name: Simulator build
-        working-directory: apps/native/${{ matrix.app }}/ios/App
-        run: |
-          xcodebuild -project App.xcodeproj -scheme App -configuration Release -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath "$RUNNER_TEMP/sim" build CODE_SIGNING_ALLOWED=NO | tail -3
-          ditto -c -k --keepParent "$RUNNER_TEMP/sim/Build/Products/Release-iphonesimulator/App.app" "$RUNNER_TEMP/Horus-${{ matrix.app }}-simulator.app.zip"
-      - name: Device archive
-        working-directory: apps/native/${{ matrix.app }}/ios/App
+      - name: Build, sign and upload
+        working-directory: .
         env:
-          CERT_B64: ${{ secrets.IOS_CERT_P12_BASE64 }}
-          CERT_PASSWORD: ${{ secrets.IOS_CERT_PASSWORD }}
-          PROFILE_B64: ${{ secrets.IOS_PROVISION_PROFILE_BASE64 }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-        run: |
-          if [ -n "$CERT_B64" ] && [ -n "$PROFILE_B64" ]; then
-            KEYCHAIN="$RUNNER_TEMP/build.keychain-db"
-            security create-keychain -p "" "$KEYCHAIN"
-            security set-keychain-settings -lut 21600 "$KEYCHAIN"
-            security unlock-keychain -p "" "$KEYCHAIN"
-            echo "$CERT_B64" | base64 -d > "$RUNNER_TEMP/cert.p12"
-            security import "$RUNNER_TEMP/cert.p12" -P "$CERT_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN"
-            security list-keychain -d user -s "$KEYCHAIN"
-            mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-            echo "$PROFILE_B64" | base64 -d > ~/Library/MobileDevice/Provisioning\ Profiles/horus.mobileprovision
-            xcodebuild -project App.xcodeproj -scheme App -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/App.xcarchive" archive DEVELOPMENT_TEAM="$APPLE_TEAM_ID" | tail -3
-            printf '%s\n' '<?xml version="1.0" encoding="UTF-8"?>' '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' '<plist version="1.0"><dict><key>method</key><string>app-store-connect</string><key>uploadSymbols</key><true/></dict></plist>' > "$RUNNER_TEMP/export.plist"
-            xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/App.xcarchive" -exportOptionsPlist "$RUNNER_TEMP/export.plist" -exportPath "$RUNNER_TEMP/export" | tail -3
-          else
-            echo "No Apple signing secrets: producing an unsigned archive."
-            xcodebuild -project App.xcodeproj -scheme App -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/App.xcarchive" archive CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO | tail -3
-          fi
-          ditto -c -k --keepParent "$RUNNER_TEMP/App.xcarchive" "$RUNNER_TEMP/Horus-${{ matrix.app }}.xcarchive.zip"
+          # App Store Connect API key (Admin role): with it the build is signed and uploaded to TestFlight; without it, unsigned.
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8_BASE64: ${{ secrets.ASC_KEY_P8_BASE64 }}
+        run: bash apps/native/scripts/ios-build.sh ${{ matrix.app }} ${{ github.run_number }} ${{ github.event.inputs.testflight || 'true' }}
       - uses: actions/upload-artifact@v4
         with:
           name: horus-${{ matrix.app }}-ios
           path: |
-            ${{ runner.temp }}/Horus-${{ matrix.app }}-simulator.app.zip
-            ${{ runner.temp }}/Horus-${{ matrix.app }}.xcarchive.zip
-            ${{ runner.temp }}/export/*.ipa
+            ${{ runner.temp }}/out-${{ matrix.app }}/*.zip
+            ${{ runner.temp }}/out-${{ matrix.app }}/*.ipa
           if-no-files-found: error
 
   desktop:

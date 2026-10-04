@@ -37,7 +37,7 @@ try {
 // Start clean, keep .git
 for (const name of ["apps", "web", ".github", "README.md", ".gitignore"]) rmSync(path.join(CHECKOUT, name), { recursive: true, force: true });
 
-const SKIP = new Set(["node_modules", "dist", "build", ".gradle", "resources", "Pods", "xcuserdata", "release", ".assets-stamp", "public-repo"]);
+const SKIP = new Set(["node_modules", "dist", "build", ".gradle", "resources", "Pods", "xcuserdata", "release", ".assets-stamp", "public-repo", "store"]);
 const filter = (src) => {
   const base = path.basename(src);
   if (SKIP.has(base)) return false;

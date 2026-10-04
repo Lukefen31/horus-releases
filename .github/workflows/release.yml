@@ -107,10 +107,12 @@ jobs:
       - name: Build, sign and upload
         working-directory: .
         env:
-          # App Store Connect API key (Admin role): with it the build is signed and uploaded to TestFlight; without it, unsigned.
+          # App Store Connect API key and Apple Distribution certificate: with them the build is signed (and uploaded to TestFlight); without them, unsigned.
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
           ASC_KEY_P8_BASE64: ${{ secrets.ASC_KEY_P8_BASE64 }}
+          IOS_DIST_P12_BASE64: ${{ secrets.IOS_DIST_P12_BASE64 }}
+          IOS_DIST_P12_PASSWORD: ${{ secrets.IOS_DIST_P12_PASSWORD }}
         run: bash apps/native/scripts/ios-build.sh ${{ matrix.app }} ${{ github.run_number }} ${{ github.event.inputs.testflight || 'true' }}
       - uses: actions/upload-artifact@v4
         with:

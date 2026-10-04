@@ -34,7 +34,7 @@ ARCHIVE="$RUNNER_TEMP/Horus-$APP.xcarchive"
 
 if [ -n "${ASC_KEY_P8_BASE64:-}" ] && [ -n "${ASC_KEY_ID:-}" ] && [ -n "${ASC_ISSUER_ID:-}" ]; then
   KEY="$RUNNER_TEMP/AuthKey_${ASC_KEY_ID}.p8"
-  printf '%s' "$ASC_KEY_P8_BASE64" | base64 --decode > "$KEY"
+  printf '%s' "$ASC_KEY_P8_BASE64" | tr -d ' \r\n' | base64 --decode > "$KEY"
   AUTH=(-allowProvisioningUpdates -authenticationKeyPath "$KEY" -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID")
 
   echo "::group::Signed archive ($APP, build $BUILD)"

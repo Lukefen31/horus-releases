@@ -34,11 +34,22 @@ export function token() {
 
 /** Calls the API; throws with Apple's error detail on failure. */
 export async function asc(method, path, body) {
-  const res = await fetch(`https://api.appstoreconnect.apple.com${path}`, {
-    method,
-    headers: { Authorization: `Bearer ${token()}`, "Content-Type": "application/json" },
-    body: body ? JSON.stringify(body) : undefined,
-  });
+  let res;
+  for (let attempt = 1; ; attempt++) {
+    try {
+      res = await fetch(`https://api.appstoreconnect.apple.com${path}`, {
+        method,
+        headers: { Authorization: `Bearer ${token()}`, "Content-Type": "application/json" },
+        body: body ? JSON.stringify(body) : undefined,
+        signal: AbortSignal.timeout(60_000),
+      });
+      break;
+    } catch (e) {
+      // Network hiccups (connect timeouts) are retried; HTTP errors are not.
+      if (attempt >= 4) throw e;
+      await new Promise((r) => setTimeout(r, 2000 * attempt));
+    }
+  }
   const text = await res.text();
   const json = text ? JSON.parse(text) : {};
   if (!res.ok) {

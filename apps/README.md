@@ -30,6 +30,20 @@ emailed sign-in link opens the app rather than the browser, once the site's
 
 - `apps/native/shared/config.ts`: the shared Capacitor config; `club/` and
   `member/` only set the app id, the name and the start path.
+- Plugins: `cap sync` registers only the plugins listed in an app's **own**
+  `package.json` (`club/`, `member/`, `home/`), and resolves them from the shared
+  install in `apps/native/node_modules` (declared in `apps/native/package.json`,
+  locked in its `package-lock.json`). Horus Home lists
+  `@capacitor/local-notifications`: the site's reminders schedule the next 30
+  days of notifications through it (`web/src/lib/home/notify.ts` reaches the
+  plugin as `window.Capacitor.Plugins.LocalNotifications`, no import), they use
+  inexact alarms, and the app asks for notification permission only when the
+  person turns reminders on. On Android the plugin's exact-alarm permission is
+  removed from the merged manifest and POST_NOTIFICATIONS is declared
+  (`scripts/patch-native.mjs` keeps both in step); the status bar icon is
+  `home/android/app/src/main/res/drawable/ic_stat_horus.xml`. After adding a
+  plugin run `cap sync` in that app's folder and commit the generated
+  `capacitor.build.gradle`, `capacitor.settings.gradle` and `CapApp-SPM/Package.swift`.
 - `apps/native/scripts/brand-assets.mjs`: icon and splash sources from the
   website's favicon; `@capacitor/assets` makes every size.
 - `apps/native/scripts/patch-native.mjs`: the native-project edits Capacitor

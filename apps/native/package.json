@@ -1,7 +1,7 @@
 {
   "name": "horus-native",
   "private": true,
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Horus for iPhone, iPad and Android: Capacitor shells around the live product (the club app and the member portal).",
   "type": "module",
   "scripts": {
@@ -20,6 +20,7 @@
     "@capacitor/browser": "^8.0.0",
     "@capacitor/core": "^8.5.2",
     "@capacitor/ios": "^8.5.2",
+    "@capacitor/local-notifications": "^8.3.1",
     "@capacitor/network": "^8.0.0",
     "@capacitor/splash-screen": "^8.0.0",
     "@capacitor/status-bar": "^8.0.0"

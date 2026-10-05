@@ -9,6 +9,8 @@
  *   - versionCode from ANDROID_VERSION_CODE (CI run number), versionName from package.json
  *   - App Links: https://horus.farm/club/* (club) or /portal/* (member) open the app
  *     (verified against public/.well-known/assetlinks.json on the site)
+ *   - Horus Home only (notifications: true): POST_NOTIFICATIONS, and the Local Notifications
+ *     plugin's SCHEDULE_EXACT_ALARM removed from the merged manifest (reminders use inexact alarms)
  * iOS (App/Info.plist, App/App.entitlements, App.xcodeproj)
  *   - WKAppBoundDomains = horus.farm, so the site's service worker runs in the shell
  *   - ITSAppUsesNonExemptEncryption = false (HTTPS only), the display name
@@ -28,7 +30,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const APPS = {
   club: { startPath: "/club", displayName: "Horus" },
   member: { startPath: "/portal", displayName: "Horus Member" },
-  home: { startPath: "/home", displayName: "Horus Home" },
+  home: { startPath: "/home", displayName: "Horus Home", notifications: true },
 };
 const version = JSON.parse(readFileSync(path.join(ROOT, "package.json"), "utf8")).version;
 export const APPLE_TEAM_ID = "23Y8G4D63V";
@@ -123,6 +125,27 @@ function patchManifest(app, startPath) {
   console.log(`${app}: manifest patched with app links for ${startPath}`);
 }
 
+function patchNotifications(app) {
+  const file = path.join(ROOT, app, "android/app/src/main/AndroidManifest.xml");
+  let s = readFileSync(file, "utf8");
+  if (s.includes("SCHEDULE_EXACT_ALARM")) {
+    console.log(`${app}: manifest already set up for reminders`);
+    return;
+  }
+  if (!s.includes("xmlns:tools")) s = s.replace(/<manifest xmlns:android="([^"]+)">/, `<manifest xmlns:android="$1" xmlns:tools="http://schemas.android.com/tools">`);
+  s = s.replace(
+    /<\/manifest>\s*$/,
+    `    <!-- horus: reminders. The Local Notifications plugin adds the boot and wake-lock permissions itself. Android 13+ asks before notifying. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Reminders use inexact alarms (a few minutes late is fine), so the plugin's exact-alarm permission is dropped: no "Alarms and reminders" prompt, no Play exact-alarm declaration. -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" tools:node="remove" />
+</manifest>
+`,
+  );
+  writeFileSync(file, s);
+  console.log(`${app}: manifest patched for reminders`);
+}
+
 function patchInfoPlist(app, displayName) {
   const file = path.join(ROOT, app, "ios/App/App/Info.plist");
   if (!existsSync(file)) {
@@ -152,6 +175,7 @@ function patchInfoPlist(app, displayName) {
 for (const [app, cfg] of Object.entries(APPS)) {
   patchGradle(app);
   patchManifest(app, cfg.startPath);
+  if (cfg.notifications) patchNotifications(app);
   patchInfoPlist(app, cfg.displayName);
   patchXcodeProject(app);
 }

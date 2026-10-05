@@ -1,6 +1,6 @@
 # Horus for the desktop: installers for Windows, macOS and Linux.
 #   npm run dist:win     (on Windows)     → dist/Horus-Setup-<version>.exe and a portable .exe
-#   npm run dist:mac     (on macOS)       → dist/Horus-<version>.dmg (unsigned until the Apple certificate exists)
+#   npm run dist:mac     (on macOS)       → dist/Horus-<version>.dmg (signed and notarised once MAC_CERT_P12_BASE64 is set: apps/desktop/scripts/mac-signing-setup.mjs)
 #   npm run dist:linux   (on Linux)       → dist/Horus-<version>.AppImage and .deb
 # CI builds all three (.github/workflows/desktop.yml) and the public releases repo carries the files.
 appId: farm.horus.desktop
@@ -40,7 +40,7 @@ mac:
   hardenedRuntime: true
   gatekeeperAssess: false
   darkModeSupport: true
-  # Signing and notarisation switch on when CSC_LINK / APPLE_ID secrets exist; without them the build is unsigned.
+  # Signing switches on when MAC_CERT_P12_BASE64 exists; notarisation uses the App Store Connect API key. Without them the build is unsigned.
 dmg:
   artifactName: Horus-${version}.${ext}
 linux:

@@ -1,8 +1,11 @@
 {
   "name": "horus-home-app",
   "private": true,
-  "version": "1.0.1",
-  "description": "Horus Home: the grow journal for personal growers, for iPhone, iPad and Android (Capacitor shell; dependencies live in ../package.json).",
+  "version": "1.0.2",
+  "description": "Horus Home: the grow journal for personal growers, for iPhone, iPad and Android (Capacitor shell; installed from ../package.json, and the plugins listed here are the ones cap sync registers for this app).",
+  "dependencies": {
+    "@capacitor/local-notifications": "^8.3.1"
+  },
   "scripts": {
     "sync": "cap sync",
     "open:android": "cap open android",
